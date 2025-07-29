@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import MoodHeatmap from './MoodHeatmap';
 import ActivityLogger from './ActivityLogger';
 import GameElements from './GameElements';
+import { activityService, initializeDatabase, type CreateActivityInput } from '../lib/database';
 export interface Activity {
   id: string;
   category: string;
@@ -14,20 +15,122 @@ const Dashboard: React.FC = () => {
   const [streakCount, setStreakCount] = useState(0);
   const [level, setLevel] = useState(1);
   const [totalPoints, setTotalPoints] = useState(0);
-  const addActivity = (activity: Activity) => {
-    setActivities(prev => [activity, ...prev]);
-    setTotalPoints(prev => prev + activity.points);
-    // Simple streak calculation - if we have an activity today
-    const today = new Date().toISOString().split('T')[0];
-    const hasActivityToday = [...activities, activity].some(a => a.timestamp.split('T')[0] === today);
-    if (hasActivityToday) {
-      setStreakCount(prev => prev + 1);
-      // Level up every 10 positive points
-      if (totalPoints + activity.points > 0 && (totalPoints + activity.points) % 10 === 0) {
-        setLevel(prev => prev + 1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  // Initialize database and load data on component mount
+  useEffect(() => {
+    const initializeApp = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Initialize database
+        await initializeDatabase();
+        
+        // Load recent activities
+        await loadActivities();
+        
+        // Load user stats
+        await loadStats();
+      } catch (err) {
+        console.error('Failed to initialize app:', err);
+        setError(err instanceof Error ? err.message : 'Failed to initialize database');
+      } finally {
+        setLoading(false);
       }
+    };
+
+    initializeApp();
+  }, []);
+
+  // Load activities from database
+  const loadActivities = async () => {
+    try {
+      const dbActivities = await activityService.getActivities(undefined, undefined, 20);
+      setActivities(dbActivities.map(activity => ({
+        id: activity.id,
+        category: activity.category,
+        name: activity.name,
+        points: activity.points,
+        timestamp: activity.timestamp
+      })));
+    } catch (err) {
+      console.error('Failed to load activities:', err);
     }
   };
+
+  // Load user statistics
+  const loadStats = async () => {
+    try {
+      const stats = await activityService.getActivityStats();
+      setTotalPoints(stats.totalPoints);
+      setStreakCount(stats.streakCount);
+      setLevel(stats.level);
+    } catch (err) {
+      console.error('Failed to load stats:', err);
+    }
+  };
+
+  // Add activity to database and update state
+  const addActivity = async (activity: Activity) => {
+    try {
+      const createInput: CreateActivityInput = {
+        id: activity.id,
+        category: activity.category,
+        name: activity.name,
+        points: activity.points,
+        timestamp: activity.timestamp
+      };
+      
+      // Save to database
+      await activityService.createActivity(createInput);
+      
+      // Update local state
+      setActivities(prev => [activity, ...prev]);
+      
+      // Reload stats to get accurate calculations
+      await loadStats();
+    } catch (err) {
+      console.error('Failed to add activity:', err);
+      setError('Failed to save activity. Please try again.');
+    }
+  };
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center space-y-2">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="text-sm text-muted-foreground">Loading your mood tracker...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center space-y-4 max-w-md">
+          <div className="text-red-500 dark:text-red-400">
+            <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-medium">Database Connection Error</h3>
+          <p className="text-sm text-muted-foreground">{error}</p>
+          <p className="text-xs text-muted-foreground">
+            Please check your Turso database configuration and try refreshing the page.
+          </p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return <div className="space-y-6">
       <section className="space-y-2">
         <h2 className="text-lg font-medium">Your Mood Map</h2>

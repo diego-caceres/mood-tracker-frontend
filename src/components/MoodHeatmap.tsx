@@ -1,11 +1,32 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Activity } from './Dashboard';
+import { activityService, type DailyMoodData } from '../lib/database';
 interface MoodHeatmapProps {
   activities: Activity[];
 }
 const MoodHeatmap: React.FC<MoodHeatmapProps> = ({
   activities
 }) => {
+  const [dailyMoodData, setDailyMoodData] = useState<DailyMoodData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Load daily mood data from database
+  useEffect(() => {
+    const loadDailyMoodData = async () => {
+      try {
+        setLoading(true);
+        const data = await activityService.getDailyMoodData(28);
+        setDailyMoodData(data);
+      } catch (error) {
+        console.error('Failed to load daily mood data:', error);
+        // Fallback to calculating from activities prop
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadDailyMoodData();
+  }, [activities]); // Reload when activities change
   // Generate days for the last 4 weeks (28 days)
   const generateCalendarDays = () => {
     const days = [];
@@ -25,8 +46,15 @@ const MoodHeatmap: React.FC<MoodHeatmapProps> = ({
     return days;
   };
   const days = generateCalendarDays();
-  // Calculate mood score for each day
+  // Calculate mood score for each day - use database data if available, fallback to activities prop
   const getDayMood = (dateString: string) => {
+    // Try to find data from database first
+    const dbData = dailyMoodData.find(d => d.date === dateString);
+    if (dbData) {
+      return dbData.totalPoints;
+    }
+    
+    // Fallback to calculating from activities prop
     const dayActivities = activities.filter(a => a.timestamp.split('T')[0] === dateString);
     if (dayActivities.length === 0) return 0;
     const total = dayActivities.reduce((sum, activity) => sum + activity.points, 0);
@@ -42,6 +70,16 @@ const MoodHeatmap: React.FC<MoodHeatmapProps> = ({
     if (score > -10) return 'bg-red-400 dark:bg-red-500';
     return 'bg-red-500 dark:bg-red-600';
   };
+  if (loading) {
+    return (
+      <div className="rounded-lg border p-4 bg-card">
+        <div className="flex items-center justify-center h-32">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+        </div>
+      </div>
+    );
+  }
+
   return <div className="rounded-lg border p-4 bg-card">
       <div className="grid grid-cols-7 gap-2">
         {/* Day labels (S M T W T F S) */}

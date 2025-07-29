@@ -26,12 +26,18 @@ Track activities across 8 categories:
 - **Achievements**: Unlock badges for consistency and milestones
 - **Progress Tracking**: Visual progress bars and point system
 
+### 🗄️ Data Persistence
+- **Turso Database**: All activities stored in a fast, global SQLite database
+- **Real-time Sync**: Activities saved instantly and synced across devices
+- **Offline Support**: Local fallback when database is unavailable
+
 ### 🌙 Dark Mode Support
 Toggle between light and dark themes for comfortable viewing.
 
 ## Tech Stack
 
 - **Frontend**: React 18 with TypeScript
+- **Database**: Turso (SQLite)
 - **Styling**: Tailwind CSS with custom dark mode support
 - **Icons**: Lucide React
 - **Build Tool**: Vite
@@ -42,6 +48,7 @@ Toggle between light and dark themes for comfortable viewing.
 ### Prerequisites
 - Node.js (version 16 or higher)
 - npm or yarn
+- Turso account and database (for data persistence)
 
 ### Installation
 
@@ -56,12 +63,28 @@ cd mood-tracker-dado
 npm install
 ```
 
-3. Start the development server:
+3. Set up your Turso database:
+   - Create a [Turso account](https://turso.tech)
+   - Create a new database: `turso db create mood-tracker`
+   - Get your database URL: `turso db show mood-tracker`
+   - Create an auth token: `turso db tokens create mood-tracker`
+
+4. Configure environment variables:
+```bash
+cp .env.example .env
+```
+Then edit `.env` and add your Turso credentials:
+```env
+VITE_TURSO_DATABASE_URL=libsql://your-database-name-your-username.turso.io
+VITE_TURSO_AUTH_TOKEN=your-auth-token-here
+```
+
+5. Start the development server:
 ```bash
 npm run dev
 ```
 
-4. Open your browser and navigate to `http://localhost:5173`
+6. Open your browser and navigate to `http://localhost:5173`
 
 ### Available Scripts
 
@@ -89,6 +112,12 @@ src/
 │   ├── Header.tsx           # App header with dark mode toggle
 │   └── MoodHeatmap.tsx      # Calendar heatmap visualization
 ├── lib/
+│   ├── database/
+│   │   ├── client.ts        # Turso database client setup
+│   │   ├── services.ts      # Database operations and queries
+│   │   ├── types.ts         # Database type definitions
+│   │   ├── schema.sql       # Database schema
+│   │   └── index.ts         # Database exports
 │   └── utils.ts             # Utility functions
 ├── App.tsx                  # Main app component
 ├── index.tsx               # App entry point
@@ -107,11 +136,49 @@ src/
 
 This project is open source and available under the [MIT License](LICENSE).
 
+## Database
+
+This app uses [Turso](https://turso.tech) for data persistence, which provides:
+- **Global Edge Database**: SQLite replicated to multiple regions
+- **Fast Queries**: Sub-10ms response times
+- **Scalable**: Handles millions of reads per second
+- **Serverless**: Pay only for what you use
+
+### Database Schema
+
+The app uses a simple `activities` table:
+
+```sql
+CREATE TABLE activities (
+  id TEXT PRIMARY KEY,
+  category TEXT NOT NULL,
+  name TEXT NOT NULL,
+  points INTEGER NOT NULL,
+  timestamp TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+```
+
+### Local Development
+
+For local development without Turso, you can use an in-memory database:
+```env
+VITE_TURSO_DATABASE_URL=file:local.db
+VITE_TURSO_AUTH_TOKEN=
+```
+
+**Note:** The `file:` URL scheme is not supported in browsers, so the app automatically converts `file:` URLs to use an in-memory database (`:memory:`). This means:
+- ✅ The app will work immediately for development
+- ⚠️ Data will be lost when you refresh the page or restart the dev server
+- 💡 For persistent local data, use a real Turso database instead
+
 ## Future Enhancements
 
-- Data persistence (localStorage/database)
-- Export mood data
+- Export mood data to JSON/CSV
 - Custom activity creation
-- Weekly/monthly analytics
+- Weekly/monthly analytics dashboard
 - Social sharing features
 - Mobile app version
+- Activity categories customization
+- Data backup and restore
