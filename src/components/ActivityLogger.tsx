@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
 import { Activity } from './Dashboard';
+import { activityService, type CreateActivityInput } from '../lib/database';
 import { Utensils, Dumbbell, Book, Coffee, Briefcase, Heart, Music, Frown } from 'lucide-react';
+
 interface ActivityLoggerProps {
-  onAddActivity: (activity: Activity) => void;
+  onAddActivity?: (activity: Activity) => void;
+  onActivityAdded?: () => void;
+  targetDate?: string;
 }
 interface CategoryButton {
   id: string;
@@ -15,168 +19,214 @@ interface CategoryButton {
   }[];
 }
 const ActivityLogger: React.FC<ActivityLoggerProps> = ({
-  onAddActivity
+  onAddActivity,
+  onActivityAdded,
+  targetDate
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const categories: CategoryButton[] = [{
     id: 'food',
-    name: 'Food',
+    name: 'Comida',
     icon: <Utensils size={20} />,
     color: 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400',
     activities: [{
-      name: 'Healthy meal',
+      name: 'Comida saludable',
       points: 3
     }, {
-      name: 'Home cooking',
+      name: 'Cocinar en casa',
       points: 2
     }, {
-      name: 'Fast food',
+      name: 'Comida rápida',
       points: -2
     }, {
-      name: 'Overeating',
+      name: 'Comer en exceso',
       points: -3
     }]
   }, {
     id: 'exercise',
-    name: 'Exercise',
+    name: 'Ejercicio',
     icon: <Dumbbell size={20} />,
     color: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
     activities: [{
-      name: 'Workout',
+      name: 'Entrenar',
       points: 5
     }, {
-      name: 'Walk/Run',
+      name: 'Caminar/Correr',
       points: 3
     }, {
-      name: 'Stretch',
+      name: 'Estirar',
       points: 2
     }, {
-      name: 'Skipped exercise',
+      name: 'Saltar ejercicio',
       points: -2
     }]
   }, {
     id: 'learning',
-    name: 'Learning',
+    name: 'Aprendizaje',
     icon: <Book size={20} />,
     color: 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400',
     activities: [{
-      name: 'Read book',
+      name: 'Leer libro',
       points: 4
     }, {
-      name: 'Online course',
+      name: 'Curso online',
       points: 3
     }, {
-      name: 'New skill',
+      name: 'Nueva habilidad',
       points: 5
     }, {
-      name: 'Procrastinated',
+      name: 'Procrastinar',
       points: -2
     }]
   }, {
     id: 'selfcare',
-    name: 'Self Care',
+    name: 'Autocuidado',
     icon: <Heart size={20} />,
     color: 'bg-pink-100 text-pink-600 dark:bg-pink-900/30 dark:text-pink-400',
     activities: [{
-      name: 'Meditation',
+      name: 'Meditación',
       points: 3
     }, {
-      name: 'Good sleep',
+      name: 'Buen sueño',
       points: 4
     }, {
-      name: 'Social time',
+      name: 'Tiempo social',
       points: 2
     }, {
-      name: 'Skipped self-care',
+      name: 'Saltar autocuidado',
       points: -3
     }]
   }, {
     id: 'work',
-    name: 'Work',
+    name: 'Trabajo',
     icon: <Briefcase size={20} />,
     color: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
     activities: [{
-      name: 'Productive day',
+      name: 'Día productivo',
       points: 4
     }, {
-      name: 'Completed task',
+      name: 'Tarea completada',
       points: 2
     }, {
-      name: 'Helped colleague',
+      name: 'Ayudar colega',
       points: 3
     }, {
-      name: 'Missed deadline',
+      name: 'Perder fecha límite',
       points: -3
     }]
   }, {
     id: 'habits',
-    name: 'Habits',
+    name: 'Hábitos',
     icon: <Coffee size={20} />,
     color: 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400',
     activities: [{
-      name: 'No sugar',
+      name: 'Sin azúcar',
       points: 2
     }, {
-      name: 'Drink water',
+      name: 'Beber agua',
       points: 1
     }, {
-      name: 'Early rising',
+      name: 'Levantarse temprano',
       points: 2
     }, {
-      name: 'Bad habit',
+      name: 'Mal hábito',
       points: -2
     }]
   }, {
     id: 'hobbies',
-    name: 'Hobbies',
+    name: 'Pasatiempos',
     icon: <Music size={20} />,
     color: 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400',
     activities: [{
-      name: 'Creative time',
+      name: 'Tiempo creativo',
       points: 3
     }, {
-      name: 'Nature time',
+      name: 'Tiempo en naturaleza',
       points: 4
     }, {
-      name: 'Music practice',
+      name: 'Práctica musical',
       points: 2
     }, {
-      name: 'Missed hobby',
+      name: 'Perder pasatiempo',
       points: -1
     }]
   }, {
     id: 'mood',
-    name: 'Mood',
+    name: 'Estado de Ánimo',
     icon: <Frown size={20} />,
     color: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400',
     activities: [{
-      name: 'Great day',
+      name: 'Gran día',
       points: 5
     }, {
-      name: 'Stress managed',
+      name: 'Estrés controlado',
       points: 3
     }, {
-      name: 'Anxiety',
+      name: 'Ansiedad',
       points: -3
     }, {
-      name: 'Bad mood',
+      name: 'Mal humor',
       points: -4
     }]
   }];
-  const handleAddActivity = (categoryId: string, activity: {
+  const handleAddActivity = async (categoryId: string, activity: {
     name: string;
     points: number;
   }) => {
     const category = categories.find(c => c.id === categoryId);
     if (!category) return;
+
+    const activityId = Date.now().toString();
+    
+    // Use targetDate if provided, otherwise use current time
+    let timestamp: string;
+    if (targetDate) {
+      // Create date in local timezone to avoid timezone shift issues
+      const targetDateTime = new Date(targetDate + 'T00:00:00');
+      const now = new Date();
+      targetDateTime.setHours(now.getHours());
+      targetDateTime.setMinutes(now.getMinutes());
+      targetDateTime.setSeconds(now.getSeconds());
+      timestamp = targetDateTime.toISOString();
+    } else {
+      timestamp = new Date().toISOString();
+    }
+
     const newActivity: Activity = {
-      id: Date.now().toString(),
+      id: activityId,
       category: category.name,
       name: activity.name,
       points: activity.points,
-      timestamp: new Date().toISOString()
+      timestamp
     };
-    onAddActivity(newActivity);
+
+    try {
+      // Save to database
+      const createInput: CreateActivityInput = {
+        id: activityId,
+        category: category.name,
+        name: activity.name,
+        points: activity.points,
+        timestamp
+      };
+      
+      await activityService.createActivity(createInput);
+      
+      // Call appropriate callback
+      if (onAddActivity) {
+        onAddActivity(newActivity);
+      }
+      if (onActivityAdded) {
+        onActivityAdded();
+      }
+    } catch (error) {
+      console.error('Failed to add activity:', error);
+      // Still call callback for UI update even if DB save failed
+      if (onAddActivity) {
+        onAddActivity(newActivity);
+      }
+    }
+    
     setSelectedCategory(null);
   };
   const getSelectedCategory = () => {
@@ -194,7 +244,7 @@ const ActivityLogger: React.FC<ActivityLoggerProps> = ({
       {selectedCategory && <div className="border rounded-lg p-4 bg-card animate-accordion-down">
           <h3 className="font-medium mb-3 flex items-center gap-2">
             {getSelectedCategory()?.icon}
-            {getSelectedCategory()?.name} Activities
+            Actividades de {getSelectedCategory()?.name}
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {getSelectedCategory()?.activities.map((activity, index) => <button key={index} className={`p-3 rounded-lg border flex justify-between items-center hover:bg-muted transition-colors`} onClick={() => handleAddActivity(selectedCategory, activity)}>
@@ -206,7 +256,7 @@ const ActivityLogger: React.FC<ActivityLoggerProps> = ({
               </button>)}
           </div>
           <button className="w-full mt-3 text-sm text-muted-foreground hover:text-foreground" onClick={() => setSelectedCategory(null)}>
-            Cancel
+            Cancelar
           </button>
         </div>}
     </div>;

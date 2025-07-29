@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router';
 import { Activity } from './Dashboard';
 import { activityService, type DailyMoodData } from '../lib/database';
 interface MoodHeatmapProps {
@@ -7,6 +8,7 @@ interface MoodHeatmapProps {
 const MoodHeatmap: React.FC<MoodHeatmapProps> = ({
   activities
 }) => {
+  const navigate = useNavigate();
   const [dailyMoodData, setDailyMoodData] = useState<DailyMoodData[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -91,7 +93,12 @@ const MoodHeatmap: React.FC<MoodHeatmapProps> = ({
         {/* Actual day squares */}
         {days.map(day => {
         const mood = getDayMood(day.dateString);
-        return <div key={day.dateString} className={`h-8 md:h-10 rounded-md flex items-center justify-center relative ${getMoodColorClass(mood)}`} title={`${day.date.toLocaleDateString()}: Mood score ${mood}`}>
+        return <div 
+              key={day.dateString} 
+              className={`h-8 md:h-10 rounded-md flex items-center justify-center relative cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all ${getMoodColorClass(mood)}`} 
+              title={`${day.date.toLocaleDateString('es-ES')}: Puntuación de ánimo ${mood}. Haz clic para ver detalles.`}
+              onClick={() => navigate(`/day/${day.dateString}`)}
+            >
               <span className="text-xs absolute bottom-1 right-1 opacity-50">
                 {day.dayOfMonth}
               </span>
@@ -99,12 +106,12 @@ const MoodHeatmap: React.FC<MoodHeatmapProps> = ({
       })}
       </div>
       <div className="mt-4 flex items-center justify-center gap-2 text-xs">
-        <span className="text-muted-foreground">Less</span>
+        <span className="text-muted-foreground">Menos</span>
         <div className="w-4 h-4 rounded bg-gray-100 dark:bg-gray-800"></div>
         <div className="w-4 h-4 rounded bg-green-300 dark:bg-green-400"></div>
         <div className="w-4 h-4 rounded bg-green-400 dark:bg-green-500"></div>
         <div className="w-4 h-4 rounded bg-green-500 dark:bg-green-600"></div>
-        <span className="text-muted-foreground">More</span>
+        <span className="text-muted-foreground">Más</span>
       </div>
     </div>;
 };

@@ -100,7 +100,7 @@ const Dashboard: React.FC = () => {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center space-y-2">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="text-sm text-muted-foreground">Loading your mood tracker...</p>
+          <p className="text-sm text-muted-foreground">Cargando tu rastreador de estado de ánimo...</p>
         </div>
       </div>
     );
@@ -115,16 +115,16 @@ const Dashboard: React.FC = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
             </svg>
           </div>
-          <h3 className="text-lg font-medium">Database Connection Error</h3>
+          <h3 className="text-lg font-medium">Error de Conexión a la Base de Datos</h3>
           <p className="text-sm text-muted-foreground">{error}</p>
           <p className="text-xs text-muted-foreground">
-            Please check your Turso database configuration and try refreshing the page.
+            Por favor verifica la configuración de tu base de datos Turso e intenta refrescar la página.
           </p>
           <button 
             onClick={() => window.location.reload()} 
             className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
           >
-            Retry
+            Reintentar
           </button>
         </div>
       </div>
@@ -133,26 +133,26 @@ const Dashboard: React.FC = () => {
 
   return <div className="space-y-6">
       <section className="space-y-2">
-        <h2 className="text-lg font-medium">Your Mood Map</h2>
+        <h2 className="text-lg font-medium">Tu Mapa de Estado de Ánimo</h2>
         <p className="text-sm text-muted-foreground">
-          Track how you feel each day
+          Rastrea cómo te sientes cada día
         </p>
         <MoodHeatmap activities={activities} />
       </section>
       <section className="space-y-2">
-        <h2 className="text-lg font-medium">Log Activity</h2>
+        <h2 className="text-lg font-medium">Registrar Actividad</h2>
         <p className="text-sm text-muted-foreground">
-          What have you done today?
+          ¿Qué has hecho hoy?
         </p>
         <ActivityLogger onAddActivity={addActivity} />
       </section>
       <section className="space-y-2">
-        <h2 className="text-lg font-medium">Your Progress</h2>
-        <p className="text-sm text-muted-foreground">Keep up the good work!</p>
+        <h2 className="text-lg font-medium">Tu Progreso</h2>
+        <p className="text-sm text-muted-foreground">¡Sigue con el buen trabajo!</p>
         <GameElements streakCount={streakCount} level={level} totalPoints={totalPoints} />
       </section>
       <section className="space-y-2">
-        <h2 className="text-lg font-medium">Recent Activities</h2>
+        <h2 className="text-lg font-medium">Actividades Recientes</h2>
         <div className="border rounded-lg overflow-hidden">
           {activities.length > 0 ? <ul className="divide-y">
               {activities.slice(0, 5).map(activity => <li key={activity.id} className="p-3 flex justify-between">
@@ -168,7 +168,7 @@ const Dashboard: React.FC = () => {
                   </span>
                 </li>)}
             </ul> : <div className="p-8 text-center text-muted-foreground">
-              No activities logged yet. Start tracking your day!
+              Aún no hay actividades registradas. ¡Comienza a rastrear tu día!
             </div>}
         </div>
       </section>

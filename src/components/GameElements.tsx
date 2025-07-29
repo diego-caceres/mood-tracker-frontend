@@ -16,20 +16,20 @@ const GameElements: React.FC<GameElementsProps> = ({
   // Define achievements
   const achievements = [{
     id: 'streak3',
-    name: 'Consistent',
-    description: 'Log activities 3 days in a row',
+    name: 'Constante',
+    description: 'Registra actividades 3 días seguidos',
     icon: <Zap size={16} className="text-yellow-500" />,
     unlocked: streakCount >= 3
   }, {
     id: 'points10',
-    name: 'Starter',
-    description: 'Earn 10 positive points',
+    name: 'Principiante',
+    description: 'Gana 10 puntos positivos',
     icon: <Award size={16} className="text-blue-500" />,
     unlocked: totalPoints >= 10
   }, {
     id: 'level3',
-    name: 'Dedicated',
-    description: 'Reach level 3',
+    name: 'Dedicado',
+    description: 'Alcanza el nivel 3',
     icon: <Trophy size={16} className="text-purple-500" />,
     unlocked: level >= 3
   }];
@@ -42,18 +42,18 @@ const GameElements: React.FC<GameElementsProps> = ({
             <Zap size={24} />
           </div>
           <div>
-            <h3 className="font-medium">Current Streak</h3>
+            <h3 className="font-medium">Racha Actual</h3>
             <div className="text-2xl font-bold">
-              {streakCount} {streakCount === 1 ? 'day' : 'days'}
+              {streakCount} {streakCount === 1 ? 'día' : 'días'}
             </div>
           </div>
         </div>
         {/* Level card */}
         <div className="p-4 border rounded-lg bg-card">
           <div className="flex justify-between items-center mb-2">
-            <h3 className="font-medium">Level {level}</h3>
+            <h3 className="font-medium">Nivel {level}</h3>
             <span className="text-sm text-muted-foreground">
-              {totalPoints} total points
+              {totalPoints} puntos totales
             </span>
           </div>
           <div className="w-full bg-muted rounded-full h-2 mb-1">
@@ -62,7 +62,7 @@ const GameElements: React.FC<GameElementsProps> = ({
           }}></div>
           </div>
           <div className="text-xs text-muted-foreground">
-            {nextLevelPoints - totalPoints} points to level {level + 1}
+            {nextLevelPoints - totalPoints} puntos para nivel {level + 1}
           </div>
         </div>
       </div>
@@ -70,7 +70,7 @@ const GameElements: React.FC<GameElementsProps> = ({
       <div className="border rounded-lg bg-card p-4">
         <h3 className="font-medium mb-3 flex items-center gap-2">
           <Trophy size={18} />
-          Achievements
+          Logros
         </h3>
         <ul className="space-y-2">
           {achievements.map(achievement => <li key={achievement.id} className={`p-2 rounded-lg border flex items-center gap-2 ${achievement.unlocked ? 'bg-muted/50' : 'opacity-50'}`}>

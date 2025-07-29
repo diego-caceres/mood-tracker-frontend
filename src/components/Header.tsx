@@ -16,7 +16,7 @@ const Header: React.FC<HeaderProps> = ({
           </div>
           <h1 className="text-xl font-bold">MoodTrack</h1>
         </div>
-        <button onClick={() => setDarkMode(!darkMode)} className="p-2 rounded-full hover:bg-muted transition-colors" aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}>
+        <button onClick={() => setDarkMode(!darkMode)} className="p-2 rounded-full hover:bg-muted transition-colors" aria-label={darkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}>
           {darkMode ? <Sun size={20} /> : <Moon size={20} />}
         </button>
       </div>
