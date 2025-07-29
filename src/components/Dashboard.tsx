@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Trash2 } from 'lucide-react';
 import MoodHeatmap from './MoodHeatmap';
 import ActivityLogger from './ActivityLogger';
 import GameElements from './GameElements';
@@ -17,6 +18,8 @@ const Dashboard: React.FC = () => {
   const [totalPoints, setTotalPoints] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+  const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
   // Initialize database and load data on component mount
   useEffect(() => {
     const initializeApp = async () => {
@@ -95,6 +98,32 @@ const Dashboard: React.FC = () => {
       setError('Failed to save activity. Please try again.');
     }
   };
+
+  const handleDeleteActivity = async (activityId: string) => {
+    try {
+      await activityService.deleteActivity(activityId);
+      setActivities(prev => prev.filter(activity => activity.id !== activityId));
+      setShowDeleteConfirm(null);
+      // Reload stats to get accurate calculations
+      await loadStats();
+    } catch (error) {
+      console.error('Failed to delete activity:', error);
+    }
+  };
+
+  const handleLongPressStart = (activityId: string) => {
+    const timer = setTimeout(() => {
+      setShowDeleteConfirm(activityId);
+    }, 500);
+    setLongPressTimer(timer);
+  };
+
+  const handleLongPressEnd = () => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
+    }
+  };
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -155,23 +184,67 @@ const Dashboard: React.FC = () => {
         <h2 className="text-lg font-medium">Actividades Recientes</h2>
         <div className="border rounded-lg overflow-hidden">
           {activities.length > 0 ? <ul className="divide-y">
-              {activities.slice(0, 5).map(activity => <li key={activity.id} className="p-3 flex justify-between">
+              {activities.slice(0, 5).map(activity => <li 
+                key={activity.id} 
+                className="p-3 flex justify-between group hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                onTouchStart={() => handleLongPressStart(activity.id)}
+                onTouchEnd={handleLongPressEnd}
+                onTouchCancel={handleLongPressEnd}
+                onMouseDown={() => handleLongPressStart(activity.id)}
+                onMouseUp={handleLongPressEnd}
+                onMouseLeave={handleLongPressEnd}
+              >
                   <div>
                     <span className="font-medium">{activity.name}</span>
                     <span className="ml-2 text-sm text-muted-foreground">
                       {activity.category}
                     </span>
                   </div>
-                  <span className={activity.points > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
-                    {activity.points > 0 ? '+' : ''}
-                    {activity.points}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className={activity.points > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                      {activity.points > 0 ? '+' : ''}
+                      {activity.points}
+                    </span>
+                    <button
+                      onClick={() => setShowDeleteConfirm(activity.id)}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 hover:text-red-600"
+                      title="Eliminar actividad"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </li>)}
             </ul> : <div className="p-8 text-center text-muted-foreground">
               Aún no hay actividades registradas. ¡Comienza a rastrear tu día!
             </div>}
         </div>
       </section>
+
+      {/* Delete Confirmation Dialog */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-card rounded-lg max-w-sm w-full p-6 shadow-xl">
+            <h3 className="text-lg font-semibold mb-2">Eliminar Actividad</h3>
+            <p className="text-muted-foreground mb-4">
+              ¿Estás seguro de que quieres eliminar esta actividad? Esta acción no se puede deshacer.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowDeleteConfirm(null)}
+                className="px-4 py-2 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => handleDeleteActivity(showDeleteConfirm)}
+                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>;
 };
 export default Dashboard;

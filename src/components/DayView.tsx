@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Trash2 } from "lucide-react";
 import { activityService, type DatabaseActivity } from "../lib/database";
 import ActivityLogger from "./ActivityLogger";
 
@@ -10,6 +10,8 @@ const DayView: React.FC = () => {
   const [activities, setActivities] = useState<DatabaseActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [showActivityLogger, setShowActivityLogger] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+  const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
 
   // Handle date parsing to avoid timezone issues
   const currentDate = date ? new Date(date + "T00:00:00") : new Date();
@@ -44,6 +46,30 @@ const DayView: React.FC = () => {
   const handleActivityAdded = () => {
     loadDayActivities();
     setShowActivityLogger(false);
+  };
+
+  const handleDeleteActivity = async (activityId: string) => {
+    try {
+      await activityService.deleteActivity(activityId);
+      setActivities(prev => prev.filter(activity => activity.id !== activityId));
+      setShowDeleteConfirm(null);
+    } catch (error) {
+      console.error('Failed to delete activity:', error);
+    }
+  };
+
+  const handleLongPressStart = (activityId: string) => {
+    const timer = setTimeout(() => {
+      setShowDeleteConfirm(activityId);
+    }, 500); // 500ms long press
+    setLongPressTimer(timer);
+  };
+
+  const handleLongPressEnd = () => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
+    }
   };
 
   const totalPoints = activities.reduce(
@@ -176,7 +202,13 @@ const DayView: React.FC = () => {
             {activities.map((activity) => (
               <div
                 key={activity.id}
-                className="rounded-lg border p-3 bg-card flex justify-between items-center"
+                className="rounded-lg border p-3 bg-card flex justify-between items-center group relative hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                onTouchStart={() => handleLongPressStart(activity.id)}
+                onTouchEnd={handleLongPressEnd}
+                onTouchCancel={handleLongPressEnd}
+                onMouseDown={() => handleLongPressStart(activity.id)}
+                onMouseUp={handleLongPressEnd}
+                onMouseLeave={handleLongPressEnd}
               >
                 <div>
                   <div className="font-medium">{activity.name}</div>
@@ -188,13 +220,22 @@ const DayView: React.FC = () => {
                     })}
                   </div>
                 </div>
-                <div
-                  className={`font-semibold ${
-                    activity.points > 0 ? "text-green-600" : "text-red-600"
-                  }`}
-                >
-                  {activity.points > 0 ? "+" : ""}
-                  {activity.points}
+                <div className="flex items-center gap-2">
+                  <div
+                    className={`font-semibold ${
+                      activity.points > 0 ? "text-green-600" : "text-red-600"
+                    }`}
+                  >
+                    {activity.points > 0 ? "+" : ""}
+                    {activity.points}
+                  </div>
+                  <button
+                    onClick={() => setShowDeleteConfirm(activity.id)}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 hover:text-red-600"
+                    title="Eliminar actividad"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
             ))}
@@ -222,6 +263,32 @@ const DayView: React.FC = () => {
                 onActivityAdded={handleActivityAdded}
                 targetDate={dateString}
               />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-card rounded-lg max-w-sm w-full p-6 shadow-xl">
+            <h3 className="text-lg font-semibold mb-2">Eliminar Actividad</h3>
+            <p className="text-muted-foreground mb-4">
+              ¿Estás seguro de que quieres eliminar esta actividad? Esta acción no se puede deshacer.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowDeleteConfirm(null)}
+                className="px-4 py-2 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => handleDeleteActivity(showDeleteConfirm)}
+                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+              >
+                Eliminar
+              </button>
             </div>
           </div>
         </div>

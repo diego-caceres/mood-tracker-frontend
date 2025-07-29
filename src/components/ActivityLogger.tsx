@@ -24,6 +24,7 @@ const ActivityLogger: React.FC<ActivityLoggerProps> = ({
   targetDate
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const categories: CategoryButton[] = [{
     id: 'food',
     name: 'Comida',
@@ -173,10 +174,14 @@ const ActivityLogger: React.FC<ActivityLoggerProps> = ({
     name: string;
     points: number;
   }) => {
+    // Prevent duplicate submissions
+    if (isSubmitting) return;
+    
     const category = categories.find(c => c.id === categoryId);
     if (!category) return;
 
-    const activityId = Date.now().toString();
+    setIsSubmitting(true);
+    const activityId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     
     // Use targetDate if provided, otherwise use current time
     let timestamp: string;
@@ -201,23 +206,24 @@ const ActivityLogger: React.FC<ActivityLoggerProps> = ({
     };
 
     try {
-      // Save to database
-      const createInput: CreateActivityInput = {
-        id: activityId,
-        category: category.name,
-        name: activity.name,
-        points: activity.points,
-        timestamp
-      };
+      // Save to database only if onActivityAdded is used (DayView case)
+      // Dashboard handles its own database saving via onAddActivity
+      if (onActivityAdded) {
+        const createInput: CreateActivityInput = {
+          id: activityId,
+          category: category.name,
+          name: activity.name,
+          points: activity.points,
+          timestamp
+        };
+        
+        await activityService.createActivity(createInput);
+        onActivityAdded();
+      }
       
-      await activityService.createActivity(createInput);
-      
-      // Call appropriate callback
+      // Call Dashboard callback (which handles its own DB saving)
       if (onAddActivity) {
         onAddActivity(newActivity);
-      }
-      if (onActivityAdded) {
-        onActivityAdded();
       }
     } catch (error) {
       console.error('Failed to add activity:', error);
@@ -225,6 +231,8 @@ const ActivityLogger: React.FC<ActivityLoggerProps> = ({
       if (onAddActivity) {
         onAddActivity(newActivity);
       }
+    } finally {
+      setIsSubmitting(false);
     }
     
     setSelectedCategory(null);
@@ -247,7 +255,16 @@ const ActivityLogger: React.FC<ActivityLoggerProps> = ({
             Actividades de {getSelectedCategory()?.name}
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {getSelectedCategory()?.activities.map((activity, index) => <button key={index} className={`p-3 rounded-lg border flex justify-between items-center hover:bg-muted transition-colors`} onClick={() => handleAddActivity(selectedCategory, activity)}>
+            {getSelectedCategory()?.activities.map((activity, index) => <button 
+              key={index} 
+              className={`p-3 rounded-lg border flex justify-between items-center transition-colors ${
+                isSubmitting 
+                  ? 'opacity-50 cursor-not-allowed' 
+                  : 'hover:bg-muted'
+              }`} 
+              onClick={() => handleAddActivity(selectedCategory, activity)}
+              disabled={isSubmitting}
+            >
                 <span>{activity.name}</span>
                 <span className={`font-medium ${activity.points > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                   {activity.points > 0 ? '+' : ''}
